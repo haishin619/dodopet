@@ -608,6 +608,120 @@ body.zhuyin-page .zhuyinToggleWrap{display:flex;}
   }
 }
 
+
+/* 手機版：寵物取名與初始選寵放大，避免輸入框太小不好改名 */
+.petShopDetails .grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.petCard .petNameInline{
+  width:100%;
+}
+@media(max-width:620px){
+  #starterModal.modal{
+    align-items:flex-start;
+    justify-content:center;
+    padding:12px;
+    overflow:auto;
+  }
+  #starterModal .modalCard{
+    width:100%;
+    min-height:calc(100dvh - 24px);
+    border-radius:24px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  #starterModal .modalCard h2{
+    font-size:26px;
+  }
+  #starterModal .choiceRow{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  #starterModal .choice{
+    min-height:118px;
+    font-size:20px;
+    padding:16px;
+  }
+  #starterModal .choice .big{
+    font-size:62px;
+  }
+
+  .petShopDetails .grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+    padding:10px !important;
+  }
+  .petCard{
+    min-height:auto !important;
+    display:grid !important;
+    grid-template-columns:74px minmax(0,1fr);
+    align-items:center;
+    column-gap:10px;
+    row-gap:8px;
+    padding:10px !important;
+  }
+  .petCard .icon{
+    grid-row:1 / span 4;
+    width:74px;
+    height:74px;
+    font-size:44px;
+  }
+  .petCard .name{
+    font-size:17px;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+  }
+  .petCard .smallHint,
+  .petCard .price,
+  .petCard .buy,
+  .petCard .petNameInline{
+    grid-column:2;
+  }
+  .petCard .buy{
+    width:100%;
+    min-height:42px;
+    font-size:15px;
+    padding:9px 8px;
+  }
+  .petCard .petNameInline{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    padding:8px;
+    margin-top:0;
+  }
+  .petCard .petNameInline input{
+    min-width:0 !important;
+    width:100% !important;
+    min-height:44px;
+    font-size:16px;
+    padding:10px;
+  }
+  .petCard .petNameInline button{
+    min-height:44px;
+    font-size:15px;
+    padding:9px 12px;
+    white-space:nowrap;
+  }
+}
+@media(max-width:380px){
+  .petCard{
+    grid-template-columns:62px minmax(0,1fr);
+    column-gap:8px;
+  }
+  .petCard .icon{
+    width:62px;
+    height:62px;
+    font-size:38px;
+  }
+  .petCard .petNameInline{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1674,7 +1788,7 @@ function renderCard(x,type){
   const placedCount=(type==='item'&&x.cat!=='點心')?itemPlacedCount(x.id):0;
   const owned=(type==='item'&&x.cat!=='點心')?ownedCount>0:!!state.owned[x.id];
   const inRoom=type==='pet' && state.room.some(r=>r.type==='pet'&&r.id===x.id);
-  const card=document.createElement('div');card.className='card';
+  const card=document.createElement('div');card.className='card'; if(type==='pet') card.classList.add('petCard');
   const surpriseReady=(type==='item'||type==='bg') && surpriseRevealReady(x,type);
   const surpriseLocked=(type==='item'||type==='bg') && surpriseMysteryLocked(x,type);
   if((surpriseReady || surpriseLocked) && type!=='bg'){
@@ -1785,7 +1899,7 @@ function renderShop(list,el,type){
     const petShown=visibleShopList(pets,'pet');
     if(petShown.length){
       const petBlock=document.createElement('details');
-      petBlock.className='shopCategoryDetails categoryBlock';
+      petBlock.className='shopCategoryDetails categoryBlock petShopDetails';
       petBlock.open=true;
       petBlock.innerHTML=`<summary>🐾 可購買寵物（${petShown.length}隻）</summary><div class="grid"></div>`;
       const petGrid=petBlock.querySelector('.grid');
