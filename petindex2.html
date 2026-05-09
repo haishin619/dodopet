@@ -514,6 +514,50 @@ body.zhuyin-page .zhuyinToggleWrap{display:flex;}
   .saveCodeArea{width:100%;min-height:112px;border:2px solid #eadcff;border-radius:16px;padding:10px;font:inherit;font-size:13px;font-weight:800;color:#44335b;background:#fbf8ff;resize:vertical;line-height:1.45;}
   @media(max-width:620px){.saveTransferActions .btn{flex:1 1 100%;}.saveCodeArea{min-height:140px;font-size:12px;}}
 
+
+  /* 房間頁：固定寵物畫面，操作下方照顧條或物品按鈕時仍看得到房間 */
+  #room{
+    position:sticky;
+    top:118px;
+    z-index:22;
+    border:3px solid #ffffffcc;
+  }
+  @media(max-width:620px){
+    #room{top:104px;}
+  }
+
+  /* 商店分類：可展開／收合，避免商品頁面過長 */
+  .shopCategoryDetails{
+    background:#ffffffcc;
+    border:2px solid #eadcff;
+    border-radius:22px;
+    margin:12px 0;
+    overflow:hidden;
+    box-shadow:0 5px 16px #8088aa18;
+  }
+  .shopCategoryDetails summary{
+    list-style:none;
+    cursor:pointer;
+    padding:12px 14px;
+    font-size:17px;
+    font-weight:950;
+    color:#6530b8;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:#fbf8ff;
+  }
+  .shopCategoryDetails summary::-webkit-details-marker{display:none;}
+  .shopCategoryDetails summary::after{
+    content:"⌄";
+    font-size:18px;
+    color:#8b5cf6;
+    transition:.2s;
+  }
+  .shopCategoryDetails[open] summary::after{transform:rotate(180deg);}
+  .shopCategoryDetails .grid{padding:10px;}
+
 </style>
 </head>
 <body>
@@ -625,7 +669,7 @@ body.zhuyin-page .zhuyinToggleWrap{display:flex;}
 
         <div class="shopTitle">🧪 測試功能</div>
         <div class="smallHint">以下功能僅在家長設定登入後顯示，供大人進行資料重置與房間清空。</div>
-        <div class="testBox"><b>資料測試</b><button class="btn danger" id="resetAllDataRoom">重置整個遊戲資料</button><button class="btn" id="clearRoom">清空房間</button></div>
+        <div class="testBox"><b>資料測試</b><button class="btn danger" id="resetAllDataRoom">重置整個遊戲資料</button><button class="btn" id="clearRoom">清空房間</button><button class="btn good" id="resetCoins">愛心幣10000測試</button><button class="btn" id="testMaxGrow">寵物放到最大測試</button><button class="btn" id="testUnlockAllItems">全部解鎖測試</button></div>
         <div class="shopTitle">📦 跨裝置存檔</div>
         <div class="smallHint">手機和平板不會自動共用資料；可在原本裝置匯出存檔碼，再到另一台裝置貼上匯入。</div>
         <div class="saveTransferBox">
@@ -1628,7 +1672,10 @@ function renderCard(x,type){
   else if(type==='item'){
     if(ownedCount>=ITEM_MAX_OWNED && placedCount>=ownedCount){b.textContent='已達上限 5/5'; b.classList.add('locked'); b.disabled=true;}
     else if(placedCount<ownedCount){b.textContent=`放入房間 ${placedCount}/${ownedCount}`;}
-    else {b.textContent=ownedCount>0?`再買1個 💜${countedItemNextPrice(x)}｜${ownedCount}/5`:'首次免費＋放入';}
+    else {
+      const nextPay=countedItemNextPrice(x);
+      b.textContent=ownedCount>0?`再買1個 💜${nextPay}｜${ownedCount}/5`:(nextPay===0?'首次免費＋放入':`購買＋放入 💜${nextPay}`);
+    }
   }
   else b.textContent=owned?'放入房間':'購買';
   b.onclick=()=>{
@@ -1685,7 +1732,7 @@ function renderShop(list,el,type){
     const status=document.getElementById('itemUnlockStatus'); if(status)status.textContent=itemUnlockText();
     if(!shopUnlocked('item')){const note=document.createElement('div');note.className='lockedNote';note.textContent='商店目前由家長鎖定；已經買過的非點心物品仍可放回房間。';el.appendChild(note);}
     const groups={}; shown.forEach(x=>{(groups[x.cat||'其他'] ||= []).push(x);});
-    shopCategoryOrder.forEach(cat=>{const arr=(groups[cat]||[]).slice().sort((a,b)=>a.price-b.price||a.name.localeCompare(b.name,'zh-Hant')); if(!arr.length)return; const block=document.createElement('div');block.className='categoryBlock';block.innerHTML=`<div class="categoryTitle">${shopCategoryIcon[cat]||'📦'} ${cat}</div><div class="grid"></div>`;const g=block.querySelector('.grid');arr.forEach(x=>g.appendChild(renderCard(x,type)));el.appendChild(block);});
+    shopCategoryOrder.forEach((cat,idx)=>{const arr=(groups[cat]||[]).slice().sort((a,b)=>a.price-b.price||a.name.localeCompare(b.name,'zh-Hant')); if(!arr.length)return; const block=document.createElement('details');block.className='shopCategoryDetails categoryBlock';block.open=idx===0;block.innerHTML=`<summary>${shopCategoryIcon[cat]||'📦'} ${cat}（${arr.length}樣）</summary><div class="grid"></div>`;const g=block.querySelector('.grid');arr.forEach(x=>g.appendChild(renderCard(x,type)));el.appendChild(block);});
     return;
   }
   if(type==='pet'&&!shopUnlocked('pet')){const note=document.createElement('div');note.className='lockedNote';note.textContent='新寵物購買目前由家長鎖定；小貓、小狗仍可使用。';el.appendChild(note);}
