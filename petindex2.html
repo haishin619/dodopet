@@ -14,7 +14,7 @@
   .title{font-size:22px;font-weight:950;letter-spacing:.5px;}
   .coinBox{display:flex;align-items:center;gap:6px;background:#fff;border:2px solid #eadcff;border-radius:999px;padding:8px 12px;font-weight:950;box-shadow:0 4px 16px #6b50b622;}
   .heartCoin{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#f0ddff;color:var(--heart);font-weight:950;font-size:16px;}
-  .tabs{display:grid;grid-template-columns:repeat(9,1fr);gap:8px;margin-top:12px;}
+  .tabs{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:12px;}
   button{font:inherit;border:0;cursor:pointer;}
   .tab{padding:10px 8px;border-radius:16px;background:#ffffffaa;color:#54576b;font-weight:850;border:2px solid transparent;}
   .tab.active{background:#fff;border-color:#9d7cff;color:#6530b8;box-shadow:0 4px 14px #8b5cf633;}
@@ -558,13 +558,63 @@ body.zhuyin-page .zhuyinToggleWrap{display:flex;}
   .shopCategoryDetails[open] summary::after{transform:rotate(180deg);}
   .shopCategoryDetails .grid{padding:10px;}
 
+
+/* 平板直式修正：照顧條在 621～900px 不再硬擠 7 欄，避免「點心」等文字跑出卡片 */
+@media (max-width:900px){
+  .carePanel{
+    overflow:hidden;
+  }
+  .careGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+  }
+  .careCard{
+    min-width:0 !important;
+    padding:7px !important;
+  }
+  .careHead{
+    min-width:0 !important;
+    gap:6px !important;
+  }
+  .careHead span:first-child{
+    min-width:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  .careHead span:last-child{
+    flex:0 0 auto !important;
+  }
+  .careBtn{
+    width:100% !important;
+    min-width:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    padding:7px 4px !important;
+  }
+}
+
+/* 小手機再維持兩欄，但字級略縮，避免按鈕文字擠出 */
+@media (max-width:420px){
+  .careGrid{
+    gap:6px !important;
+  }
+  .careHead{
+    font-size:11px !important;
+  }
+  .careBtn{
+    font-size:11px !important;
+  }
+}
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
     <div class="bar"><div class="title">💜 寵物養成遊戲</div><div class="coinBox"><span class="heartCoin">💜</span><span id="coins">10000</span></div></div>
-    <div class="tabs"><button class="tab active" data-tab="taskPanel">✅任務</button><button class="tab" data-tab="roomPanel">🏠房間</button><button class="tab" data-tab="petPanel">🐾寵物</button><button class="tab" data-tab="itemPanel">🛒商店</button><button class="tab" data-tab="bgPanel">🌈背景</button><button class="tab" data-tab="interactionPanel">🎮互動</button><button class="tab" data-tab="plantPanel">🌱植物</button><button class="tab" data-tab="achievementPanel">🏆成就</button><button class="tab" data-tab="parentPanel">🔐家長</button></div>
+    <div class="tabs"><button class="tab active" data-tab="taskPanel">✅任務</button><button class="tab" data-tab="roomPanel">🏠房間</button><button class="tab" data-tab="itemPanel">🛒商店</button><button class="tab" data-tab="bgPanel">🌈背景</button><button class="tab" data-tab="interactionPanel">🎮互動</button><button class="tab" data-tab="plantPanel">🌱植物</button><button class="tab" data-tab="achievementPanel">🏆成就</button><button class="tab" data-tab="parentPanel">🔐家長</button></div>
   </div>
   <section id="taskPanel" class="panel active">
     <div class="taskBox">
@@ -599,7 +649,6 @@ body.zhuyin-page .zhuyinToggleWrap{display:flex;}
       
     </div>
   </section>
-  <section id="petPanel" class="panel"><div class="shopTitle">可飼養寵物</div><div id="petGrid" class="grid"></div></section>
   <section id="itemPanel" class="panel"><div class="shopTitle">商店</div><div id="itemUnlockStatus" class="lockedNote"></div><div id="itemGrid"></div></section>
   <section id="bgPanel" class="panel"><div class="shopTitle">背景主題</div><div id="bgGrid" class="grid"></div></section>
   <section id="interactionPanel" class="panel">
@@ -1726,13 +1775,33 @@ function revealSurpriseItem(x){
 }
 
 function renderShop(list,el,type){
+  if(!el)return;
   el.innerHTML='';
   const shown=visibleShopList(list, type);
   if(type==='item'){
     const status=document.getElementById('itemUnlockStatus'); if(status)status.textContent=itemUnlockText();
+
+    // 商店第一順位：可購買寵物也整合到商店，並使用展開／收合。
+    const petShown=visibleShopList(pets,'pet');
+    if(petShown.length){
+      const petBlock=document.createElement('details');
+      petBlock.className='shopCategoryDetails categoryBlock';
+      petBlock.open=true;
+      petBlock.innerHTML=`<summary>🐾 可購買寵物（${petShown.length}隻）</summary><div class="grid"></div>`;
+      const petGrid=petBlock.querySelector('.grid');
+      if(!shopUnlocked('pet')){
+        const note=document.createElement('div');
+        note.className='lockedNote';
+        note.textContent='新寵物購買目前由家長鎖定；小貓、小狗仍可使用。';
+        petGrid.appendChild(note);
+      }
+      petShown.forEach(x=>petGrid.appendChild(renderCard(x,'pet')));
+      el.appendChild(petBlock);
+    }
+
     if(!shopUnlocked('item')){const note=document.createElement('div');note.className='lockedNote';note.textContent='商店目前由家長鎖定；已經買過的非點心物品仍可放回房間。';el.appendChild(note);}
     const groups={}; shown.forEach(x=>{(groups[x.cat||'其他'] ||= []).push(x);});
-    shopCategoryOrder.forEach((cat,idx)=>{const arr=(groups[cat]||[]).slice().sort((a,b)=>a.price-b.price||a.name.localeCompare(b.name,'zh-Hant')); if(!arr.length)return; const block=document.createElement('details');block.className='shopCategoryDetails categoryBlock';block.open=idx===0;block.innerHTML=`<summary>${shopCategoryIcon[cat]||'📦'} ${cat}（${arr.length}樣）</summary><div class="grid"></div>`;const g=block.querySelector('.grid');arr.forEach(x=>g.appendChild(renderCard(x,type)));el.appendChild(block);});
+    shopCategoryOrder.forEach((cat)=>{const arr=(groups[cat]||[]).slice().sort((a,b)=>a.price-b.price||a.name.localeCompare(b.name,'zh-Hant')); if(!arr.length)return; const block=document.createElement('details');block.className='shopCategoryDetails categoryBlock';block.open=false;block.innerHTML=`<summary>${shopCategoryIcon[cat]||'📦'} ${cat}（${arr.length}樣）</summary><div class="grid"></div>`;const g=block.querySelector('.grid');arr.forEach(x=>g.appendChild(renderCard(x,type)));el.appendChild(block);});
     return;
   }
   if(type==='pet'&&!shopUnlocked('pet')){const note=document.createElement('div');note.className='lockedNote';note.textContent='新寵物購買目前由家長鎖定；小貓、小狗仍可使用。';el.appendChild(note);}
@@ -2899,8 +2968,8 @@ function backgroundList(){
   const order=['blueGrad','sunsetGrad','purpleGrad','yellowGrad','greenGrad','rainbowGrad','candy','purpleCandyRoom','photoBg01','photoBg02','photoBg03','photoBg04','photoBg05','photoBg06','photoBg07','photoBg08','photoBg09','photoBg10'];
   return order.filter(id=>backgrounds[id]).map(id=>({id,...backgrounds[id]}));
 }
-function renderAll(){evaluateSicknessForToday(false); updateCoins();renderTasks();renderSpecialTasks();renderRoom();renderShop(pets,document.getElementById('petGrid'),'pet');renderShop(shopItems,document.getElementById('itemGrid'),'item');renderShop(backgroundList(),document.getElementById('bgGrid'),'bg');renderInteractive();renderParentSettings();renderPlantPanel();renderAchievementPanel();checkDailyCompleteCelebration();if(!state.starterChosen)starterModal.classList.add('show');}
-function switchTab(id){selected=null;drag=null;document.querySelectorAll('.roomItem').forEach(el=>el.classList.remove('selected'));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));if(id==='achievementPanel')renderAchievementPanel();if(id==='plantPanel')renderPlantPanel();}
+function renderAll(){evaluateSicknessForToday(false); updateCoins();renderTasks();renderSpecialTasks();renderRoom();renderShop(shopItems,document.getElementById('itemGrid'),'item');renderShop(backgroundList(),document.getElementById('bgGrid'),'bg');renderInteractive();renderParentSettings();renderPlantPanel();renderAchievementPanel();checkDailyCompleteCelebration();if(!state.starterChosen)starterModal.classList.add('show');}
+function switchTab(id){if(id==='petPanel')id='itemPanel';selected=null;drag=null;document.querySelectorAll('.roomItem').forEach(el=>el.classList.remove('selected'));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));if(id==='achievementPanel')renderAchievementPanel();if(id==='plantPanel')renderPlantPanel();}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
 room.addEventListener('pointerdown',e=>{if(e.target===room){selected=null;drag=null;document.querySelectorAll('.roomItem').forEach(el=>el.classList.remove('selected'));}});
 document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{const id=b.dataset.starter;state.starterChosen=true;state.owned[id]=true;state.room=state.room.filter(r=>r.type!=='pet');const size=petSize(0);state.room.push({uid:Date.now()+Math.random(),id,type:'pet',x:160,y:110,size,feed:0,grow:0,dx:.3,dy:.24});state.petName=state.petNames[id]||'';starterModal.classList.remove('show');save();renderAll();switchTab('roomPanel');const p=state.room.find(r=>r.type==='pet'); if(p){keepInBounds(p); save(); renderRoom(); showCareSparkle(p,'✨'); showPetTalkText(p,'新夥伴來啦！請多多照顧我💜','normal');}}); 
@@ -3269,7 +3338,7 @@ function applyZhuyinMode(){
 
   const activePanel = document.querySelector(".panel.active");
   const id = activePanel ? activePanel.id : "";
-  document.body.classList.toggle("zhuyin-page", id === "taskPanel" || id === "roomPanel");
+  document.body.classList.toggle("zhuyin-page", id === "taskPanel");
 
   const btn = document.getElementById("zhuyinToggleBtn");
   if(btn){
@@ -3447,14 +3516,12 @@ function applyZhuyinTexts(){
   const activePanel = document.querySelector(".panel.active");
   const id = activePanel ? activePanel.id : "";
 
-  if(id !== "taskPanel" && id !== "roomPanel"){
+  if(id !== "taskPanel"){
     applyZhuyinMode();
     return;
   }
 
-  const selectors = id === "taskPanel"
-    ? [".taskText", ".specialTaskDivider", "#rewardLine"]
-    : [".careBtn", ".careHead span", "#smaller", "#bigger", "#remove", "#feedStatus", "#petStatus"];
+  const selectors = [".taskText", ".specialTaskDivider", "#rewardLine"];
 
   selectors.forEach(sel=>{
     document.querySelectorAll(sel).forEach(el=>{
